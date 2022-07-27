@@ -207,7 +207,7 @@ local function insert_selection()
     end
 
     local new_line = string.sub(line, 1, anchor-1)..insert_value..string.sub(line, active, string.len(line))
-    local ts = 1658669410000000000
+    local ts = "Tue Jul 26, 08:55 PM"
     api.nvim_buf_set_lines(1, c_row-1, c_row, false, {new_line})
     close_window()
 end

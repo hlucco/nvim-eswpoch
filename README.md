@@ -3,11 +3,15 @@
 Toggles a menu which allows swapping between units and human readable strings of a configurable set of timezones
 for a given timestamp. Port of the original VSCode plugin: https://github.com/hlucco/eswpoch.
 
+## Example
+
+![example gif](https://raw.githubusercontent.com/hlucco/nvim-eswpoch/master/example.gif)
+
 ## Installation
 
 Using a plugin manager:
 
-`Plug 'hlucco/nvim-eswpoch`
+`Plug 'hlucco/nvim-eswpoch'`
 
 ## Commands
 
