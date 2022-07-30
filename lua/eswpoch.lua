@@ -148,7 +148,7 @@ local function render_options(token)
     i = i + 1
 
     for k,v in pairs(timezones) do
-        local date_string = os.date("!%a %b %d, %I:%M %p", os.time() + v * 60 * 60)
+        local date_string = os.date("!%a %b %d, %I:%M %p", unit_s + (v * 60 * 60))
         local line_entry = k..": "..date_string
         api.nvim_buf_set_lines(buf, i, i+1, false, {line_entry})
         i = i + 1
@@ -163,11 +163,10 @@ local function close_window()
 end
 
 local function move_cursor(down)
-    local win_height = vim.fn.winheight(win)
     local new_pos = math.max(2, api.nvim_win_get_cursor(win)[1] - 1)
 
     if down then
-        new_pos = math.min(win_height, api.nvim_win_get_cursor(win)[1] + 1)
+        new_pos = math.min(9, api.nvim_win_get_cursor(win)[1] + 1)
     end
 
     if new_pos == 6 and down then
@@ -207,7 +206,7 @@ local function insert_selection()
     end
 
     local new_line = string.sub(line, 1, anchor-1)..insert_value..string.sub(line, active, string.len(line))
-    local ts = "Tue Jul 26, 08:55 PM"
+    local ts = 1658669410000000000
     api.nvim_buf_set_lines(1, c_row-1, c_row, false, {new_line})
     close_window()
 end
