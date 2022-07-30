@@ -47,4 +47,4 @@ with a desired command string for activation.
 command! <command> lua require'eswpoch'.eswpoch()
 ```
 
-Version 1.0.0
+Version 1.0.1
