@@ -2,6 +2,9 @@ local api = vim.api
 local buf, win
 local c_row, c_col
 local line
+local parent_buf
+local win_width
+local win_height
 
 local function center(str)
   local width = api.nvim_win_get_width(0)
@@ -17,8 +20,8 @@ local function open_window()
     local width = api.nvim_get_option("columns")
     local height = api.nvim_get_option("lines")
 
-    local win_height = math.ceil(height * 0.2 - 5)
-    local win_width = math.ceil(width * 0.3)
+    win_height = math.ceil(height * 0.2 - 5)
+    win_width = math.ceil(width * 0.3)
 
     local opts = {
         style = "minimal",
@@ -127,6 +130,7 @@ local function render_options(token)
 
     local i = 1
     local unit_s = 0
+
     for unit, c in pairs(conversion_results) do
         if unit == 's' then
             unit_s = c
@@ -137,22 +141,23 @@ local function render_options(token)
         i = i + 1
     end
 
+    api.nvim_buf_set_lines(buf, i, i+1, false, {gen_divider(win_width)})
+    i = i + 1
+
     local timezones = {
         America_Los_Angeles = -7,
         America_Chicago = -5,
-        America_New_York = -4
+        America_New_York = -4,
+        Pacific_Honolulu = -10
     }
 
-    local width = api.nvim_get_option("columns")
-    api.nvim_buf_set_lines(buf, i, i+1, false, {gen_divider(width)})
-    i = i + 1
-
     for k,v in pairs(timezones) do
-        local date_string = os.date("!%a %b %d, %I:%M %p", unit_s + (v * 60 * 60))
+        local date_string = os.date("!%a %b %d, %I:%M %p, %Y", unit_s + (v * 60 * 60))
         local line_entry = k..": "..date_string
         api.nvim_buf_set_lines(buf, i, i+1, false, {line_entry})
         i = i + 1
     end
+
 
     api.nvim_buf_set_option(buf, 'modifiable', false)
 
@@ -166,7 +171,7 @@ local function move_cursor(down)
     local new_pos = math.max(2, api.nvim_win_get_cursor(win)[1] - 1)
 
     if down then
-        new_pos = math.min(9, api.nvim_win_get_cursor(win)[1] + 1)
+        new_pos = math.min(num_options, api.nvim_win_get_cursor(win)[1] + 1)
     end
 
     if new_pos == 6 and down then
@@ -207,7 +212,7 @@ local function insert_selection()
 
     local new_line = string.sub(line, 1, anchor-1)..insert_value..string.sub(line, active, string.len(line))
     local ts = 1658669410000000000
-    api.nvim_buf_set_lines(1, c_row-1, c_row, false, {new_line})
+    api.nvim_buf_set_lines(parent_buf, c_row-1, c_row, false, {new_line})
     close_window()
 end
 
@@ -237,6 +242,7 @@ local function set_mappings()
 end
 
 local function eswpoch()
+    parent_buf = api.nvim_win_get_buf(0)
     c_row, c_col = unpack(api.nvim_win_get_cursor(0))
     line = api.nvim_buf_get_lines(0, c_row-1, c_row, false)[1]
     local token = get_token()
