@@ -1,61 +1,21 @@
+local util = require("eswpoch.util")
+local ui = require("eswpoch.ui")
+local timezones = require("eswpoch.timezones")
+
 local api = vim.api
-local buf, win
 local c_row, c_col
 local line
 local parent_buf
 local win_width
-local win_height
 
-local function center(str)
-  local width = api.nvim_win_get_width(0)
-  local shift = math.floor(width / 2) - math.floor(string.len(str) / 2)
-  return string.rep(' ', shift) .. str
-end
-
-local function open_window()
-    buf = api.nvim_create_buf(false, true)
-    local border_buf = api.nvim_create_buf(false, true)
-    api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
-
-    local width = api.nvim_get_option("columns")
-    local height = api.nvim_get_option("lines")
-
-    win_height = math.ceil(height * 0.2 - 5)
-    win_width = math.ceil(width * 0.3)
-
-    local opts = {
-        style = "minimal",
-        relative = "cursor",
-        width = win_width,
-        height = win_height,
-        row = 1,
-        col = 0
-    }
-
-    win = api.nvim_open_win(buf, true, opts)
-    -- print(c_row, c_col)
-    api.nvim_command('au BufWipeout <buffer> exe " silent bwipeout! "'..border_buf)
-
-    api.nvim_win_set_option(win, 'cursorline', true)
-
-    api.nvim_buf_set_lines(buf, 0, -1, false, {
-        center('Eswpoch'), '', ''
-    })
-    api.nvim_buf_add_highlight(buf, -1, 'EswpochHeader', 0, 0, -1)
-    api.nvim_win_set_cursor(win, {2, 0})
-end
-
-local function trim(s)
-    return string.gsub(s, "^%s*(.-)%s*$", "%1")
-end
 
 local function get_token()
     local char_idx = 1
     local token_idx = 1
     local result = ""
-    local trim_line = trim(line)
+    local trim_line = util.trim(line)
     for token in string.gmatch(trim_line, "%S+") do
-        local trim_token = trim(token)
+        local trim_token = util.trim(token)
         -- print(token)
         char_idx = char_idx + string.len(trim_token)
         -- print(char_idx, token_idx, char_idx + token_idx, c_col)
@@ -68,15 +28,7 @@ local function get_token()
     return result
 end
 
-local function gen_divider(l)
-    local result = ""
-    for i=1, l do
-        result = result.."="
-    end
-    return result
-end
-
-local function render_options(token)
+local function render_options(token, buf)
     api.nvim_buf_set_option(buf, 'modifiable', true)
     local digits = string.len(token)
     local unit = 's';
@@ -141,15 +93,8 @@ local function render_options(token)
         i = i + 1
     end
 
-    api.nvim_buf_set_lines(buf, i, i+1, false, {gen_divider(win_width)})
+    api.nvim_buf_set_lines(buf, i, i+1, false, {ui.gen_divider()})
     i = i + 1
-
-    local timezones = {
-        America_Los_Angeles = -7,
-        America_Chicago = -5,
-        America_New_York = -4,
-        Pacific_Honolulu = -10
-    }
 
     for k,v in pairs(timezones) do
         local date_string = os.date("!%a %b %d, %I:%M %p, %Y", unit_s + (v * 60 * 60))
@@ -158,38 +103,8 @@ local function render_options(token)
         i = i + 1
     end
 
-
     api.nvim_buf_set_option(buf, 'modifiable', false)
 
-end
-
-local function close_window()
-    api.nvim_win_close(win, true)
-end
-
-local function move_cursor(down)
-    local new_pos = math.max(2, api.nvim_win_get_cursor(win)[1] - 1)
-
-    if down then
-        new_pos = math.min(num_options, api.nvim_win_get_cursor(win)[1] + 1)
-    end
-
-    if new_pos == 6 and down then
-        new_pos = 7
-    elseif new_pos == 6 then
-        new_pos = 5
-    end
-    api.nvim_win_set_cursor(win, {new_pos, 0})
-end
-
-local function split(s, delim)
-    local result = {}
-    local count = 1
-    for i in string.gmatch(s, delim) do
-        result[count] = i
-        count = count + 1
-    end
-    return result
 end
 
 local function insert_selection()
@@ -197,9 +112,9 @@ local function insert_selection()
     local anchor = string.find(line, token)
     local active = anchor + string.len(token)
 
-    local insert_value = trim(split(api.nvim_get_current_line(), "([^:]+)")[2])
+    local insert_value = util.trim(util.split(api.nvim_get_current_line(), "([^:]+)")[2])
     local split_point = string.find(api.nvim_get_current_line(), ":")
-    local insert_tokens = split(api.nvim_get_current_line(), "([^:]+)")
+    local insert_tokens = util.split(api.nvim_get_current_line(), "([^:]+)")
 
     local count = 1
     for k, v in pairs(insert_tokens) do
@@ -207,16 +122,16 @@ local function insert_selection()
     end
 
     if (count > 3) then
-        insert_value = '"'..trim(string.sub(api.nvim_get_current_line(), split_point+1))..'"'
+        insert_value = '"'..util.trim(string.sub(api.nvim_get_current_line(), split_point+1))..'"'
     end
 
     local new_line = string.sub(line, 1, anchor-1)..insert_value..string.sub(line, active, string.len(line))
     local ts = 1658669410000000000
     api.nvim_buf_set_lines(parent_buf, c_row-1, c_row, false, {new_line})
-    close_window()
+    ui.close_window()
 end
 
-local function set_mappings()
+local function set_mappings(buf)
     local mappings = {
         q = 'close_window()',
         k = 'move_cursor(false)',
@@ -246,14 +161,14 @@ local function eswpoch()
     c_row, c_col = unpack(api.nvim_win_get_cursor(0))
     line = api.nvim_buf_get_lines(0, c_row-1, c_row, false)[1]
     local token = get_token()
-    open_window()
-    render_options(token)
-    set_mappings()
+    local buf = ui.open_window()
+    render_options(token, buf)
+    set_mappings(buf)
 end
 
 return {
     eswpoch = eswpoch,
-    close_window = close_window,
-    move_cursor = move_cursor,
+    close_window = ui.close_window,
+    move_cursor = ui.move_cursor,
     insert_selection = insert_selection
 }
