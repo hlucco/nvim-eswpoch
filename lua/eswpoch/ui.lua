@@ -24,7 +24,6 @@ local function open_window()
     }
 
     win = api.nvim_open_win(buf, true, opts)
-    -- print(c_row, c_col)
     api.nvim_command('au BufWipeout <buffer> exe " silent bwipeout! "'..border_buf)
 
     api.nvim_win_set_option(win, 'cursorline', true)

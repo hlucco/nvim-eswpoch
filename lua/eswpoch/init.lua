@@ -6,8 +6,6 @@ local api = vim.api
 local c_row, c_col
 local line
 local parent_buf
-local win_width
-
 
 local function get_token()
     local char_idx = 1
@@ -16,9 +14,7 @@ local function get_token()
     local trim_line = util.trim(line)
     for token in string.gmatch(trim_line, "%S+") do
         local trim_token = util.trim(token)
-        -- print(token)
         char_idx = char_idx + string.len(trim_token)
-        -- print(char_idx, token_idx, char_idx + token_idx, c_col)
         if char_idx + token_idx + 1>= c_col then
             result = token
             break
